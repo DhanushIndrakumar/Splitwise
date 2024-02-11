@@ -1,5 +1,6 @@
 package com.example.billSplit.filter;
 import com.example.billSplit.entites.User;
+import com.example.billSplit.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +27,7 @@ import java.util.function.Function;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private JwtService jwtService;
 
     private final UserDetailsService userDetailsService;
     @Override
@@ -42,10 +44,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
         jwt = authHeader.substring(7);
-        userEmail = extractUsername(jwt);
+        userEmail = jwtService.extractUsername(jwt);
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             User userDetails = (User) this.userDetailsService.loadUserByUsername(userEmail);
-            if (isTokenValid(jwt, userDetails)) {
+            if (jwtService.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
@@ -54,7 +56,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 authToken.setDetails(
                         userDetails
                 );
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                SecurityContextHolder.getContext().setAuthentication(authToken);//update SecurityContextHolder
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 System.out.println("authentication.getDetails() = " + authentication.getDetails());
             }
@@ -98,4 +100,5 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         byte[] keyBytes = Decoders.BASE64.decode("77397A244326462948404D635166546A576E5A7234753778214125442A472D4B");
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
 }
